@@ -1,4 +1,3 @@
-// VER 1
 package main
 
 import (
@@ -14,12 +13,20 @@ import (
 )
 
 func main() {
+	// Create an instance of the Ethereum client
+	// client, err := ethclient.Dial("https://testnet.cronoslabs.com/v1/8ab55f6930dcf5912f5df9c551e07a0dE")
+
 	// TESTNET
 	// mode := "TESTNET"
-	// Create an instance of the Ethereum client
-	// client, err := ethclient.Dial("YOUR TESTNET WSS")
+	// wss := "YOUR TESTNET WSS"
 	// tokenAddr := "YOUR TESTNET ERC20 TOKEN ADDR"
+	// client, err := ethclient.Dial(wss)
+	// if err != nil {
+	// 	fmt.Println("client dial err....")
+	// 	log.Fatal(err)
+	// }
 
+	// MAINNET
 	mode := "MAINNET"
 	wss := "YOUR MAINNET WSS"
 	tokenAddr := "YOUR MAINNET ERC20 TOKEN ADDR"
@@ -66,8 +73,7 @@ func main() {
 	}
 }
 
-// // VERSION 2
-
+// // VER 2
 // package main
 
 // import (
@@ -75,7 +81,6 @@ func main() {
 // 	"fmt"
 // 	"io/ioutil"
 // 	"log"
-// 	"math/big"
 // 	"strings"
 
 // 	token "event-listen-program/contracts"
@@ -83,30 +88,27 @@ func main() {
 // 	"github.com/ethereum/go-ethereum"
 // 	"github.com/ethereum/go-ethereum/accounts/abi"
 // 	"github.com/ethereum/go-ethereum/common"
+// 	"github.com/ethereum/go-ethereum/core/types"
 // 	"github.com/ethereum/go-ethereum/ethclient"
 // )
 
 // func main() {
-// 	/// TESTNET
-// 	// // Create an instance of the Ethereum client
-// 	// client, err := ethclient.Dial("YOUR TESTNET WSS")
-// 	// // Load the contract ABI and address
-// 	// contractAddress := common.HexToAddress("YOUR TESTNET ERC20 TOKEN ADDR")
-// 	// if err != nil {
-// 	// 	fmt.Println("Err in ClientDial...")
-// 	// 	log.Fatal(err)
-// 	// }
-
 // 	// MAINNET
 // 	// Create an instance of the Ethereum client
 // 	client, err := ethclient.Dial("YOUR MAINNET WSS")
-// 	// Load the contract ABI and address
 // 	contractAddress := common.HexToAddress("YOUR MAINNET ERC20 TOKEN ADDR")
+
+// 	// TESTNET
+// 	// Create an instance of the Ethereum client
+// 	client, err := ethclient.Dial("YOUR TESTNET WSS")
+// 	contractAddress := common.HexToAddress("YOUR TESTNET ERC20 TOKEN ADDR")
+
 // 	if err != nil {
 // 		fmt.Println("Err in ClientDial...")
 // 		log.Fatal(err)
 // 	}
 
+// 	// Load the contract ABI and address
 // 	abiBytes, err := ioutil.ReadFile("ERC20.abi")
 // 	if err != nil {
 // 		fmt.Println("Err in AbiBytes...")
@@ -118,32 +120,41 @@ func main() {
 // 		log.Fatal(err)
 // 	}
 
+// 	// Create a channel to receive the event logs
+// 	logsCh := make(chan types.Log)
+
 // 	// Create a filter query
 // 	query := ethereum.FilterQuery{
-// 		FromBlock: big.NewInt(7039191),
-// 		ToBlock:   big.NewInt(7039191),
 // 		Addresses: []common.Address{contractAddress},
 // 		Topics:    [][]common.Hash{{contractAbi.Events["Transfer"].ID}},
 // 	}
 
-// 	// Retrieve logs that match the filter query
-// 	logs, err := client.FilterLogs(context.Background(), query)
+// 	// Subscribe to the event logs
+// 	sub, err := client.SubscribeFilterLogs(context.Background(), query, logsCh)
 // 	if err != nil {
-// 		fmt.Println("Err in FilterLogs...")
+// 		fmt.Println("Subscribe Filter Logs err...")
 // 		log.Fatal(err)
 // 	}
+// 	defer sub.Unsubscribe()
 
 // 	fmt.Println("Running...")
+
 // 	// Parse the logs and print the event data
 // 	event := &token.TokenTransfer{}
-// 	for _, log := range logs {
-// 		err := contractAbi.UnpackIntoInterface(event, "Transfer", log.Data)
-// 		if err != nil {
-// 			fmt.Println("Err in logs loop", err)
+// 	for {
+// 		select {
+// 		case err := <-sub.Err():
+// 			log.Fatal(err)
+// 		case log := <-logsCh:
+// 			err := contractAbi.UnpackIntoInterface(event, "Transfer", log.Data)
+// 			if err != nil {
+// 				fmt.Println("Err on Event logs channel")
+// 			}
+// 			event.From = common.HexToAddress(log.Topics[1].Hex())
+// 			event.To = common.HexToAddress(log.Topics[2].Hex())
+// 			fmt.Printf("Transfer event received: from=%s, to=%s, value=%v\n",
+// 				event.From.String(), event.To.String(), event.Value)
 // 		}
-// 		event.From = common.HexToAddress(log.Topics[1].Hex())
-// 		event.To = common.HexToAddress(log.Topics[2].Hex())
-// 		fmt.Printf("Transfer event received: from=%s, to=%s, value=%v\n",
-// 			event.From.String(), event.To.String(), event.Value)
 // 	}
+
 // }
